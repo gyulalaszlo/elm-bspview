@@ -10,6 +10,7 @@ module Bsp.Root
 
 import Array exposing (Array)
 import Bsp.Cursor exposing (..)
+import Effects exposing (Effects)
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class, style)
 import Bsp.Model exposing (..)
@@ -35,7 +36,7 @@ subscriptions model =
 -- UPDATE
 
 
-update : Msg m l -> Model m l s e -> ( Model m l s e, Cmd (Msg m l), Maybe e )
+update : Msg m l -> Model m l s e -> ( Model m l s e, Cmd (Msg m l), Effects e )
 update msg model =
     case msg of
         ChildMsg id m ->
@@ -44,20 +45,18 @@ update msg model =
                 |> Maybe.map (\(cm, cc, ce) ->
                     ( { model | locals = (Dict.insert id cm model.locals)}
                     , cc
---                    , Cmd.map (ChildMsg id) cc
                     , ce
                     ))
-                |> Maybe.withDefault (model, Cmd.none, Nothing)
---            model ! []
+                |> Maybe.withDefault (model, Cmd.none, Effects.none)
 
         SharedMsg m ->
 
-             (model, Cmd.none, Nothing)
+             (model, Cmd.none, Effects.none)
 
         _ -> let
 
                 (m,c) = updateBspOp msg model
-             in (m, c, Nothing)
+             in (m, c, Effects.none)
 
 updateBspOp : Msg m l -> Model m l s e -> ( Model m l s e, Cmd (Msg m l) )
 updateBspOp msg model =

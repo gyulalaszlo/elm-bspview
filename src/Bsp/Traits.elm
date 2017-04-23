@@ -9,6 +9,7 @@ import Bsp.Cursor exposing (Cursor)
 import Bsp.Msg exposing (Id, Msg)
 import Bsp.SplitView exposing (SplitMeta, SplitModel)
 import Bsp.Error as Error exposing (Error)
+import Effects exposing (Effects)
 import Html exposing (Html)
 
 
@@ -105,7 +106,7 @@ type alias LocalViewFn msg local shared =
 
 type alias Traits msg local shared effects =
     { subscriptions : LocalModel msg local shared -> Sub msg
-    , update : msg -> LocalModel msg local shared -> ( local, Cmd (Msg msg local), Maybe effects)
+    , update : msg -> LocalModel msg local shared -> ( local, Cmd (Msg msg local), Effects effects)
     , view : LocalViewFn msg local shared
     , wrapper :NodeViewWrapper msg local shared
     }

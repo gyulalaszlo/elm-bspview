@@ -74,7 +74,7 @@ normalThemeToolbar labelFn empties ctx {rootView, cursor, shared, selectedLeafId
 
 normalThemeLeaf labelFn ctx view model =
     div [ class "normal-leaf" ]
-        [ view model
+        [ div [ class "wrapped-leaf" ] [ view model ]
         , leafToolbar labelFn ctx view model
         ]
 
@@ -90,7 +90,7 @@ leafToolbar labelFn ctx view model =
             WrappedIsSelected ->
                 [ leafClass "selected" ]
 
-    in div leafAttrs [ id , label , closeBtn ]
+    in div leafAttrs [ closeBtn, id , label ]
 
 
 
@@ -222,19 +222,19 @@ css =
         , ( "leaf-selection", themeColor .selection )
         , ( "split-background", "black" )
         , ( "leaf-radius", "5px" )
-        , ( "leaf-margin", "0.1em" )
+        , ( "leaf-margin", "0.2em" )
 
         , ( "color-darkbg", Css.color <| Colors.Monokai.darkBlack)
 
         -- layout-editing
-        , ( "layout-border-size", "0.2em" )
+        , ( "layout-border-size", "0.3em" )
         , ( "layout-margin", "0.3em" )
         , ( "layout-editing-margin", "0.3em" )
 
         , ( "layout-editing-split-border-style", "0.1em dotted" )
         -- toolbar data
         , ( "toolbar-margin", "0.3em" )
-        , ( "toolbar-height", "1.6em" )
+        , ( "toolbar-height", "2em" )
         ]
         """
 .child-view {  }
@@ -246,7 +246,7 @@ css =
 
 /* LEAF BASICS --------------------------- */
 
-.bsp-view-split-wrapper-leaf { margin: {{ leaf-margin }}; border-top: {{ layout-border-size }} solid transparent;}
+.bsp-view-split-wrapper-leaf { margin: {{ leaf-margin }}; }
 .bsp-view-split-wrapper-leaf.bsp-view-split-wrapper-not-selected { background-color: {{ color-darkbg }}; color: #ccc; }
 .bsp-view-split-wrapper-leaf.bsp-view-split-wrapper-selected { background-color: {{ leaf-background }}; color: {{ leaf-text }}; border-top-color: {{ leaf-selection }}; }
 
@@ -282,13 +282,6 @@ css =
 .bsp-view-split-wrapper-root { margin-top: {{ toolbar-height }}; }
 
 
-/*
-.node.node-split.node-vertical.node-b { border-top: {{ layout-editing-split-border-style }} black; }
-.node.node-split.node-horizontal.node-b { border-left: {{ layout-editing-split-border-style }} black; }
-*/
-
-
-
 .layout-editing-leaf-label { position: absolute; font-size: 3em; color: #888; bottom: 0; left: 0; right: 0; text-align: center; cursor: pointer; }
 .layout-editing-leaf-label:hover { color: {{ leaf-selection }}; }
 
@@ -316,7 +309,28 @@ css =
 .layout-editing-inner-wrap { position: absolute; top: {{ toolbar-height }}; left: 0; right:0; bottom: 0; }
 
 
-.leaf-id { position: absolute; right: 0; top: 0; background: {{ leaf-text }}; color: {{ leaf-background }};  padding: 0.2em 1em; border-radius: 0 0 0 {{ leaf-radius }};  }
+.leaf-id { font-size: 0.8em; position: absolute; left: 0; right: 0; top: 0; background: {{ color-darkbg }}; color: {{ leaf-background }};  padding: 0.2em 1em; border-bottom: 0.2em solid black; }
 
-.leaf-id-selected { background-color: {{ leaf-selection }}; }
+.leaf-id-selected { background-color: {{ leaf-selection }};  }
+.leaf-id-not-selected { cursor:pointer;}
+
+.leaf-id .id { margin-right: 1.2em }
+.leaf-id .id:before { content: "#"; }
+.leaf-id .label { font-weight:bold; cursor:pointer; }
+.leaf-id-not-selected:hover .id { color: {{ leaf-background }}; }
+.leaf-id-not-selected .label:hover { text-decoration:underline; }
+.leaf-id .close-button button { border:none; font-weight:bold; }
+.leaf-id-selected .close-button button { color: {{ leaf-background }}; }
+.leaf-id .close-button button:hover { }
+
+.normal-leaf {}
+.wrapped-leaf { position:absolute; top: 2em; left:0; right:0; bottom:0; overflow-x: hidden; overflow-y:scroll; }
+
+
+
+/* Scrollbar styles */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: none; border-radius: 10px; }
+::-webkit-scrollbar-thumb { border-radius: 10px; background: rgba(255,255,255,0.1);  }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.1);  }
 """
