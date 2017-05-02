@@ -1,5 +1,5 @@
 {
-    "version": "1.0.0",
+    "version": "1.0.1",
     "summary": "Vim-like Binary Space Partitioned view container for Elm",
     "repository": "https://github.com/gyulalaszlo/elm-bspview.git",
     "license": "BSD3",
