@@ -7,7 +7,8 @@ import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import STree exposing (Cursor, STree)
-import Units.Compose.NDimensional exposing (Pair)
+import Units.Compose.Range as Range exposing (Range)
+import Units.Compose.N2 as N2 exposing (N2)
 
 
 
@@ -72,8 +73,7 @@ view view model =
 
 
 --
-type alias Bounds v = Pair v
-type alias Rect v = Pair (Bounds v)
+type alias Rect v = N2 (Range v)
 
 
 
@@ -81,7 +81,9 @@ type alias Rect v = Pair (Bounds v)
 -}
 fromCssSides : v -> v -> v -> v -> Rect v
 fromCssSides top right bottom left =
-    { x = Bounds left right, y = Bounds top bottom }
+    N2.from
+        (Range.from left right)
+        (Range.from top bottom)
 
 
 
