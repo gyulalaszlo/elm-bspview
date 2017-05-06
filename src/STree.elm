@@ -88,13 +88,13 @@ at c t =
         _ -> cannotFindNodeAt c
 
 
-attemptTransformAt : (STree v -> Result Error (STree v)) -> Cursor -> STree v -> Result Error (STree v)
-attemptTransformAt f c t =
+attemptUpdateAt : (STree v -> Result Error (STree v)) -> Cursor -> STree v -> Result Error (STree v)
+attemptUpdateAt f c t =
     case (c,t) of
         (i::xs, Many vs) ->
             List.Extra.getAt i vs
                 |> nothingToInvalidNodeIndex i c
-                |> Result.andThen (attemptTransformAt f xs)
+                |> Result.andThen (attemptUpdateAt f xs)
                 |> Result.andThen (\t -> List.Extra.setAt i t vs |> nothingToInvalidNodeIndex i c)
                 |> Result.map Many
         ([], _) -> f t
@@ -102,14 +102,14 @@ attemptTransformAt f c t =
 
 
 
-transformAt : (STree v -> STree v) -> Cursor -> STree v -> Result Error (STree v)
-transformAt f = attemptTransformAt (Ok << f)
+updateAt : (STree v -> STree v) -> Cursor -> STree v -> Result Error (STree v)
+updateAt f = attemptUpdateAt (Ok << f)
 
 andThenAt : (v -> STree v) -> Cursor -> STree v -> Result Error (STree v)
-andThenAt = transformAt << andThen
+andThenAt = updateAt << andThen
 
 mapAt : (v -> v) -> Cursor -> STree v -> Result Error (STree v)
-mapAt = transformAt << map
+mapAt = updateAt << map
 
 
 -------------------------------------------------------------------------
@@ -121,8 +121,8 @@ type TransformError x
 
 {-| Try to update the target node with a side effect that bubbles up.
 -}
-attemptTransformAtWithEffects : (STree a -> Result x (STree a,b)) -> Cursor -> STree a -> Result (TransformError x) (STree a, b)
-attemptTransformAtWithEffects f c t =
+attemptUpdateAtWithEffects : (STree a -> Result x (STree a,b)) -> Cursor -> STree a -> Result (TransformError x) (STree a, b)
+attemptUpdateAtWithEffects f c t =
     let
         indexErr h c m =
                 nothingToInvalidNodeIndex h c m
@@ -136,7 +136,7 @@ attemptTransformAtWithEffects f c t =
         stepInto cursorHead cursorRest childList =
             List.Extra.getAt cursorHead childList
                 |> indexErr cursorHead c
-                |> Result.andThen (attemptTransformAtWithEffects f cursorRest)
+                |> Result.andThen (attemptUpdateAtWithEffects f cursorRest)
                 |> Result.andThen (backUp cursorHead childList)
 
 
@@ -148,8 +148,8 @@ attemptTransformAtWithEffects f c t =
 
 {-| Try to update the target node with a side effect that bubbles up.
 -}
-transformAtWithEffects : (STree a -> (STree a,b)) -> Cursor -> STree a -> Result (TransformError x) (STree a, b)
-transformAtWithEffects f = attemptTransformAtWithEffects (Ok << f)
+updateAtWithEffects : (STree a -> (STree a,b)) -> Cursor -> STree a -> Result (TransformError x) (STree a, b)
+updateAtWithEffects f = attemptUpdateAtWithEffects (Ok << f)
 --
 
 
@@ -163,11 +163,11 @@ andThenAtWithEffects f c t =
             case t of
                 One v -> Ok <| f v
                 _ -> Err <| CannotTransformManyWithSideEffects c
-    in attemptTransformAtWithEffects fn c t
+    in attemptUpdateAtWithEffects fn c t
 
 
-mapWithEffects : (a -> (a,b)) -> Cursor -> STree a -> Result (TransformError SideEffectErrors) (STree a, b)
-mapWithEffects f = andThenAtWithEffects (\a -> f a |> Tuple.mapFirst One)
+mapAtWithEffects : (a -> (a,b)) -> Cursor -> STree a -> Result (TransformError SideEffectErrors) (STree a, b)
+mapAtWithEffects f = andThenAtWithEffects (\a -> f a |> Tuple.mapFirst One)
 
 -------------------------------------------------------------------------
 
@@ -181,7 +181,40 @@ insertAt c v t =
         in
             case idx of
                 [x] ->
-                    attemptTransformAt (\a -> insert x v a |> Result.fromMaybe (InvalidNodeIndex c x)) parentC t
+                    attemptUpdateAt (\a -> insert x v a |> Result.fromMaybe (InvalidNodeIndex c x)) parentC t
                 _ ->
                     Err <| CannotFindNodeAtCursor c
 
+-------------------------------------------------------------------------
+
+
+
+foldAsTree : (a-> b -> b) -> (List b -> b -> b) -> b -> STree a -> b
+foldAsTree oneF manyF b t =
+    case t of
+        Zero -> b
+        One v -> oneF v b
+        Many vs -> manyF (List.map (foldAsTree oneF manyF b) vs) b
+
+
+mapAsTree : (a -> b) -> (List b -> b) -> STree a -> b
+mapAsTree oneF manyF t =
+    case t of
+        Zero -> manyF []
+        One v ->  oneF v
+        Many vs ->  manyF (List.map (mapAsTree oneF manyF) vs)
+
+
+{-| Same as `mapAsTree`, but also adds a cursor pointing to the current node to the
+arguments of the mapper functions
+-}
+indexedMapAsTree : (Cursor -> a -> b) -> (Cursor -> List b -> b) -> STree a -> b
+indexedMapAsTree oneF manyF t =
+    let recur cursor t =
+            case t of
+                Zero -> manyF cursor []
+                One v -> oneF cursor v
+                Many vs ->
+                    List.indexedMap (\i -> recur (cursor ++ [i])) vs
+                        |> manyF cursor
+    in recur [] t

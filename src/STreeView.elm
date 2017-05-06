@@ -7,6 +7,8 @@ import Dict
 import Html exposing (Html, div, text)
 import Html.Attributes exposing (class)
 import STree exposing (Cursor, STree)
+import Units.Compose.NDimensional exposing (Pair)
+
 
 
 -- MODEL
@@ -41,45 +43,49 @@ type Msg
 -- SUBSCRIPTIONS
 
 
-subscriptions : Model v -> Sub Msg
-subscriptions model =
-    Sub.none
+subscriptions : (Cursor -> v -> Sub msg) -> Model v -> Sub msg
+subscriptions subFn model =
+    STree.indexedMapAsTree (subFn) (\_ -> Sub.batch) model.tree
+
+--    STree.mapAsTree (subFn ) Sub.batch model.tree
 
 
 
 -- UPDATE
 
 
---update : Msg -> Model v -> (Model v, Cmd Msg)
---update msg model =
---    case msg of
---        Noop -> model ! []
 
-update : (msg -> v -> (v, Cmd msg)) -> STree.Cursor -> msg -> Model v -> (Model v, Cmd msg)
+update : (msg -> v -> (v, Cmd msg)) -> Cursor -> msg -> Model v -> (Model v, Cmd msg)
 update childUpdateFn k msg model =
-    STree.mapWithEffects (\mdl -> childUpdateFn msg mdl) k model.tree
+    STree.mapAtWithEffects (childUpdateFn msg) k model.tree
         |> Result.map (\(sm,sc) -> ({model | tree = sm}, sc))
         |> Result.mapError (Debug.log "Err=")
         |> Result.withDefault (model, Cmd.none)
---    let (sm,sc) = STree.mapWithEffects (\mdl -> childUpdateFn msg mdl) k model.tree
---    in ({ model | tree = sm }, sc)
---    Dict.get k model.views
---        |> Maybe.map (\mdl -> childUpdateFn msg mdl)
---        |> Maybe.map (\(sm, sc)-> ({ model | views = Dict.insert k sm model.views }, sc))
---        |> Maybe.withDefault (model, Cmd.none)
 
 -- VIEW
 
 
-view : (v -> Html msg) -> Model v -> Html msg
-view msg model =
-    div [ class "STreeView-view" ]
-        [ text <| toString model ]
-        
-        
--- CSS
+view : (Cursor -> v -> Html msg) -> Model v -> Html msg
+view view model =
+    STree.indexedMapAsTree view (\_ -> div [])  model.tree
 
-css : String
-css = """
-.STreeView-view {}
-"""
+
+
+--
+type alias Bounds v = Pair v
+type alias Rect v = Pair (Bounds v)
+
+
+
+{-| Create a new rect from the CSS-ordered sides
+-}
+fromCssSides : v -> v -> v -> v -> Rect v
+fromCssSides top right bottom left =
+    { x = Bounds left right, y = Bounds top bottom }
+
+
+
+
+
+
+
