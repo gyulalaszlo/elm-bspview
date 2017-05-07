@@ -72,22 +72,3 @@ view view model =
 
 
 
---
-type alias Rect v = N2 (Range v)
-
-
-
-{-| Create a new rect from the CSS-ordered sides
--}
-fromCssSides : v -> v -> v -> v -> Rect v
-fromCssSides top right bottom left =
-    N2.from
-        (Range.from left right)
-        (Range.from top bottom)
-
-
-
-
-
-
-
